@@ -1,0 +1,155 @@
+Resources:
+  lambdaDeployment:
+    Type: AWS::S3::Bucket
+    Properties:
+      BucketName: !Sub ${AWS::StackName}-lambda-code-deployment
+      BucketEncryption:
+        ServerSideEncryptionConfiguration:
+          - ServerSideEncryptionByDefault:
+              SSEAlgorithm: aws:kms
+              KMSMasterKeyID: alias/aws/s3
+      PublicAccessBlockConfiguration:
+        IgnorePublicAcls: true
+        RestrictPublicBuckets: true
+  lambdaDeploymentBucketPolicy:
+    Type: AWS::S3::BucketPolicy
+    Properties:
+      Bucket: !Ref lambdaDeployment
+      PolicyDocument:
+        Id: RequireEncryptionInTransit
+        Version: '2012-10-17'
+        Statement:
+          - Principal: '*'
+            Action: '*'
+            Effect: Deny
+            Resource:
+              - !GetAtt lambdaDeployment.Arn
+              - !Sub ${lambdaDeployment.Arn}/*
+            Condition:
+              Bool:
+                aws:SecureTransport: 'false'
+  input:
+    Type: AWS::S3::Bucket
+    Properties:
+      BucketName: !Sub ${AWS::StackName}-input-csv
+      BucketEncryption:
+        ServerSideEncryptionConfiguration:
+          - ServerSideEncryptionByDefault:
+              SSEAlgorithm: aws:kms
+              KMSMasterKeyID: alias/aws/s3
+      PublicAccessBlockConfiguration:
+        IgnorePublicAcls: true
+        RestrictPublicBuckets: true
+      #
+      # STEP 3
+      #
+      # NotificationConfiguration:
+      #   LambdaConfigurations:
+      #     - Event: s3:ObjectCreated:*
+      #       Function: !GetAtt lambdaTransformation.Arn
+  inputBucketPolicy:
+    Type: AWS::S3::BucketPolicy
+    Properties:
+      Bucket: !Ref input
+      PolicyDocument:
+        Id: RequireEncryptionInTransit
+        Version: '2012-10-17'
+        Statement:
+          - Principal: '*'
+            Action: '*'
+            Effect: Deny
+            Resource:
+              - !GetAtt input.Arn
+              - !Sub ${input.Arn}/*
+            Condition:
+              Bool:
+                aws:SecureTransport: 'false'
+  output:
+    Type: AWS::S3::Bucket
+    Properties:
+      BucketName: !Sub ${AWS::StackName}-output-parquet
+      BucketEncryption:
+        ServerSideEncryptionConfiguration:
+          - ServerSideEncryptionByDefault:
+              SSEAlgorithm: aws:kms
+              KMSMasterKeyID: alias/aws/s3
+      PublicAccessBlockConfiguration:
+        IgnorePublicAcls: true
+        RestrictPublicBuckets: true
+  outputBucketPolicy:
+    Type: AWS::S3::BucketPolicy
+    Properties:
+      Bucket: !Ref output
+      PolicyDocument:
+        Id: RequireEncryptionInTransit
+        Version: '2012-10-17'
+        Statement:
+          - Principal: '*'
+            Action: '*'
+            Effect: Deny
+            Resource:
+              - !GetAtt output.Arn
+              - !Sub ${output.Arn}/*
+            Condition:
+              Bool:
+                aws:SecureTransport: 'false'
+  #
+  # STEP 2 with upload of zip
+  #
+
+  # lambdaExecutionRole:
+  #   Type: AWS::IAM::Role
+  #   Properties:
+  #     AssumeRolePolicyDocument:
+  #       Statement:
+  #         - Effect: Allow
+  #           Principal:
+  #             Service: lambda.amazonaws.com
+  #           Action: sts:AssumeRole
+  #     Policies:
+  #       - PolicyName: S3AccessPolicy
+  #         PolicyDocument:
+  #           Statement:
+  #             - Effect: Allow
+  #               Action:
+  #                 - s3:GetObject
+  #               Resource: '*'
+  #               # Resource: !Sub ${input.Arn}/*
+  #             - Effect: Allow
+  #               Action:
+  #                 - s3:PutObject
+  #               Resource: '*'
+  #               # Resource: !Sub ${output.Arn}/*
+  #             - Effect: Allow
+  #               Action:
+  #                 - logs:CreateLogGroup
+  #               Resource: !Sub arn:aws:logs:${AWS::Region}:${AWS::AccountId}:*
+  #             - Effect: Allow
+  #               Action:
+  #                 - logs:CreateLogStream
+  #                 - logs:PutLogEvents
+  #               Resource: !Sub arn:aws:logs:${AWS::Region}:${AWS::AccountId}:log-group:/aws/lambda/*:*
+  # lambdaTransformation:
+  #   Type: AWS::Lambda::Function
+  #   Properties:
+  #     FunctionName: !Sub ${AWS::StackName}-csv-to-parquet
+  #     Runtime: python3.11
+  #     Handler: main.lambda_handler
+  #     Role: !GetAtt lambdaExecutionRole.Arn
+  #     Code:
+  #       S3Bucket: !Ref lambdaDeployment
+  #       S3Key: function.zip
+  #     MemorySize: 1024
+  #     Timeout: 120
+  #     Layers:
+  #         - arn:aws:lambda:eu-central-1:336392948345:layer:AWSSDKPandas-Python311:31
+  #     Environment:
+  #       Variables:
+  #         OUTPUT_BUCKET: !Ref output
+  # LambdaInvokePermission:
+  #   Type: AWS::Lambda::Permission
+  #   Properties:
+  #     Action: lambda:InvokeFunction
+  #     FunctionName: !Ref lambdaTransformation
+  #     Principal: s3.amazonaws.com
+  #     SourceArn: !GetAtt input.Arn
