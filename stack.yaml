@@ -153,3 +153,163 @@ Resources:
   #     FunctionName: !Ref lambdaTransformation
   #     Principal: s3.amazonaws.com
   #     SourceArn: !GetAtt input.Arn
+
+  #
+  # Repository Connection for CI/CD
+  #
+  GitHubConnection:
+    Type: AWS::CodeStarConnections::Connection
+    Properties:
+      ConnectionName: !Sub "${AWS::StackName}-github-connection"
+      ProviderType: GitHub
+
+    #
+    # Step 4 -> Authorize Connection
+    #
+  
+  PipelineRole:
+    Type: AWS::IAM::Role
+    Properties:
+      AssumeRolePolicyDocument:
+        Version: "2012-10-17"
+        Statement:
+          - Effect: Allow
+            Principal:
+              Service: codepipeline.amazonaws.com
+            Action: sts:AssumeRole
+
+      Policies:
+        - PolicyName: PipelinePolicy
+          PolicyDocument:
+            Version: "2012-10-17"
+            Statement:
+
+              - Effect: Allow
+                Action:
+                  - codestar-connections:UseConnection
+                Resource: "*"
+
+              - Effect: Allow
+                Action:
+                  - codebuild:StartBuild
+                  - codebuild:BatchGetBuilds
+                Resource: "*"
+
+              - Effect: Allow
+                Action:
+                  - s3:PutObject
+                  - s3:GetObject
+                Resource: "*"
+
+  BuildRole:
+    Type: AWS::IAM::Role
+    Properties:
+      AssumeRolePolicyDocument:
+        Version: "2012-10-17"
+        Statement:
+          - Effect: Allow
+            Principal:
+              Service: codebuild.amazonaws.com
+            Action: sts:AssumeRole
+
+      Policies:
+        - PolicyName: CodeBuildPolicy
+          PolicyDocument:
+            Version: "2012-10-17"
+            Statement:
+
+              - Effect: Allow
+                Action:
+                  - logs:CreateLogGroup
+                  - logs:CreateLogStream
+                  - logs:PutLogEvents
+                Resource: "*"
+
+              - Effect: Allow
+                Action:
+                  - s3:PutObject
+                  - s3:GetObject
+                  - s3:ListBucket
+                Resource: "*"
+  
+  LambdaBuildProject:
+    Type: AWS::CodeBuild::Project
+    Properties:
+      Name: !Sub "${AWS::StackName}-lambda-build"
+
+      ServiceRole: !GetAtt BuildRole.Arn
+
+      Artifacts:
+        Type: CODEPIPELINE
+
+      Environment:
+        Type: LINUX_CONTAINER
+        ComputeType: BUILD_GENERAL1_SMALL
+        Image: aws/codebuild/standard:7.0
+
+      Source:
+        Type: CODEPIPELINE
+  
+  LambdaPipeline:
+    Type: AWS::CodePipeline::Pipeline
+    Properties:
+      RoleArn: !GetAtt PipelineRole.Arn
+
+      ArtifactStore:
+        Type: S3
+        Location: !Ref lambdaDeployment
+
+      Stages:
+
+        - Name: Source
+          Actions:
+            - Name: GitHubSource
+              ActionTypeId:
+                Category: Source
+                Owner: AWS
+                Provider: CodeStarSourceConnection
+                Version: "1"
+
+              OutputArtifacts:
+                - Name: SourceOutput
+
+              Configuration:
+                ConnectionArn: !Ref GitHubConnection
+                FullRepositoryId: l3onh4rd/project-data-engineering
+                BranchName: main
+
+        - Name: Build
+          Actions:
+            - Name: BuildLambda
+              ActionTypeId:
+                Category: Build
+                Owner: AWS
+                Provider: CodeBuild
+                Version: "1"
+
+              InputArtifacts:
+                - Name: SourceOutput
+
+              OutputArtifacts:
+                - Name: BuildOutput
+
+              Configuration:
+                ProjectName: !Ref LambdaBuildProject
+
+Outputs:
+
+  InputBucket:
+    Description: Input bucket for CSV files
+    Value: !Ref input
+
+  OutputBucket:
+    Description: Output bucket for Parquet files
+    Value: !Ref output
+
+  DeploymentBucket:
+    Description: Bucket containing the Lambda deployment package
+    Value: !Ref lambdaDeployment
+
+  LambdaFunction:
+    Description: Lambda function name
+    Value: !Ref lambdaTransformation
