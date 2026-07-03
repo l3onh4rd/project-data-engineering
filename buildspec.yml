@@ -9,6 +9,7 @@ phases:
     commands:
       - echo "Building Lambda package..."
       - zip -r function.zip main.py
+      - aws s3 cp function.zip s3://$DEPLOYMENT_BUCKET/function.zip
 
 artifacts:
   files:
