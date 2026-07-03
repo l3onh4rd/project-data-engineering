@@ -8,8 +8,16 @@ phases:
   build:
     commands:
       - echo "Building Lambda package..."
-      - zip -r function.zip main.py
+      - zip function.zip main.py
+
+      - echo "Uploading package..."
       - aws s3 cp function.zip s3://$DEPLOYMENT_BUCKET/function.zip
+
+      - echo "Updating Lambda..."
+      - aws lambda update-function-code \
+          --function-name $LAMBDA_NAME \
+          --s3-bucket $DEPLOYMENT_BUCKET \
+          --s3-key function.zip
 
 artifacts:
   files:
