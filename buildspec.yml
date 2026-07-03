@@ -14,8 +14,8 @@ phases:
       - aws s3 cp function.zip s3://$DEPLOYMENT_BUCKET/function.zip
 
       - echo "Updating Lambda..."
-      - echo "Lambda: $LAMBDA_NAME"
-      - echo "Bucket: $DEPLOYMENT_BUCKET"
+      - echo $LAMBDA_NAME
+      - echo $DEPLOYMENT_BUCKET"
       - aws --version
       - aws lambda update-function-code --function-name $LAMBDA_NAME --s3-bucket $DEPLOYMENT_BUCKET --s3-key function.zip
 
