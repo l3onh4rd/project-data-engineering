@@ -8,7 +8,7 @@ s3 = boto3.client("s3")
 
 def lambda_handler(event, context):
     print("### Lambda started ###")
-    print("### Lambda started THROUGH CODE PIPELINE###")
+    print("### Lambda started Lambda and AWS is great! ###")
 
     try:
         # ---------------------------
