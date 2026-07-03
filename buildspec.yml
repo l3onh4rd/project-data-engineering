@@ -15,7 +15,7 @@ phases:
 
       - echo "Updating Lambda..."
       - echo $LAMBDA_NAME
-      - echo $DEPLOYMENT_BUCKET"
+      - echo $DEPLOYMENT_BUCKET
       - aws --version
       - aws lambda update-function-code --function-name $LAMBDA_NAME --s3-bucket $DEPLOYMENT_BUCKET --s3-key function.zip
 
