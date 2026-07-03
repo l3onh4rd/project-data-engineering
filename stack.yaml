@@ -157,159 +157,253 @@ Resources:
   #
   # Repository Connection for CI/CD
   #
-  GitHubConnection:
-    Type: AWS::CodeStarConnections::Connection
-    Properties:
-      ConnectionName: !Sub "${AWS::StackName}-github-connection"
-      ProviderType: GitHub
-
-    #
-    # Step 4 -> Authorize Connection
-    #
+  #
+  # Step 4 -> Authorize Connection
+  #
+#   GitHubConnection:
+#     Type: AWS::CodeStarConnections::Connection
+#     Properties:
+#       ConnectionName: !Sub "${AWS::StackName}-github-connection"
+#       ProviderType: GitHub
   
-  PipelineRole:
-    Type: AWS::IAM::Role
-    Properties:
-      AssumeRolePolicyDocument:
-        Version: "2012-10-17"
-        Statement:
-          - Effect: Allow
-            Principal:
-              Service: codepipeline.amazonaws.com
-            Action: sts:AssumeRole
+#   PipelineRole:
+#     Type: AWS::IAM::Role
+#     Properties:
+#       AssumeRolePolicyDocument:
+#         Version: "2012-10-17"
+#         Statement:
+#           - Effect: Allow
+#             Principal:
+#               Service: codepipeline.amazonaws.com
+#             Action: sts:AssumeRole
 
-      Policies:
-        - PolicyName: PipelinePolicy
-          PolicyDocument:
-            Version: "2012-10-17"
-            Statement:
+#       Policies:
+#         - PolicyName: PipelinePolicy
+#           PolicyDocument:
+#             Version: "2012-10-17"
+#             Statement:
 
-              - Effect: Allow
-                Action:
-                  - codestar-connections:UseConnection
-                Resource: "*"
+#               - Effect: Allow
+#                 Action:
+#                   - codestar-connections:UseConnection
+#                 Resource: "*"
 
-              - Effect: Allow
-                Action:
-                  - codebuild:StartBuild
-                  - codebuild:BatchGetBuilds
-                Resource: "*"
+#               - Effect: Allow
+#                 Action:
+#                   - codebuild:StartBuild
+#                   - codebuild:BatchGetBuilds
+#                 Resource: "*"
 
-              - Effect: Allow
-                Action:
-                  - s3:PutObject
-                  - s3:GetObject
-                Resource: "*"
+#               - Effect: Allow
+#                 Action:
+#                   - s3:PutObject
+#                   - s3:GetObject
+#                 Resource: "*"
+              
+#               - Effect: Allow
+#                 Action:
+#                   - lambda:UpdateFunctionCode
+#                   - lambda:GetFunction
+#                   - lambda:GetFunctionConfiguration
+#                   - lambda:UpdateFunctionConfiguration
+#                   - lambda:PublishVersion
+#                 Resource: "*"
 
-  BuildRole:
-    Type: AWS::IAM::Role
-    Properties:
-      AssumeRolePolicyDocument:
-        Version: "2012-10-17"
-        Statement:
-          - Effect: Allow
-            Principal:
-              Service: codebuild.amazonaws.com
-            Action: sts:AssumeRole
+#               - Effect: Allow
+#                 Action:
+#                   - logs:CreateLogGroup
+#                   - logs:CreateLogStream
+#                   - logs:PutLogEvents
+#                 Resource: "*"
 
-      Policies:
-        - PolicyName: CodeBuildPolicy
-          PolicyDocument:
-            Version: "2012-10-17"
-            Statement:
+#   BuildRole:
+#     Type: AWS::IAM::Role
+#     Properties:
+#       AssumeRolePolicyDocument:
+#         Version: "2012-10-17"
+#         Statement:
+#           - Effect: Allow
+#             Principal:
+#               Service: codebuild.amazonaws.com
+#             Action: sts:AssumeRole
 
-              - Effect: Allow
-                Action:
-                  - logs:CreateLogGroup
-                  - logs:CreateLogStream
-                  - logs:PutLogEvents
-                Resource: "*"
+#       Policies:
+#         - PolicyName: CodeBuildPolicy
+#           PolicyDocument:
+#             Version: "2012-10-17"
+#             Statement:
 
-              - Effect: Allow
-                Action:
-                  - s3:PutObject
-                  - s3:GetObject
-                  - s3:ListBucket
-                Resource: "*"
-  
-  LambdaBuildProject:
-    Type: AWS::CodeBuild::Project
-    Properties:
-      Name: !Sub "${AWS::StackName}-lambda-build"
+#               - Effect: Allow
+#                 Action:
+#                   - logs:CreateLogGroup
+#                   - logs:CreateLogStream
+#                   - logs:PutLogEvents
+#                 Resource: "*"
 
-      ServiceRole: !GetAtt BuildRole.Arn
+#               - Effect: Allow
+#                 Action:
+#                   - s3:PutObject
+#                   - s3:GetObject
+#                   - s3:ListBucket
+#                 Resource: "*"
 
-      Artifacts:
-        Type: CODEPIPELINE
+#               - Effect: Allow
+#                 Action:
+#                   - s3:PutObject
+#                 Resource: !Sub "${lambdaDeployment.Arn}/*"
 
-      Environment:
-        Type: LINUX_CONTAINER
-        ComputeType: BUILD_GENERAL1_SMALL
-        Image: aws/codebuild/standard:7.0
+#               - Effect: Allow
+#                 Action:
+#                   - lambda:UpdateFunctionCode
+#                   - lambda:GetFunction
+#                 Resource: !GetAtt lambdaTransformation.Arn
 
-      Source:
-        Type: CODEPIPELINE
-  
-  LambdaPipeline:
-    Type: AWS::CodePipeline::Pipeline
-    Properties:
-      RoleArn: !GetAtt PipelineRole.Arn
+# LambdaBuildProject:
+#   Type: AWS::CodeBuild::Project
+#   Properties:
+#     Name: !Sub "${AWS::StackName}-lambda-build"
 
-      ArtifactStore:
-        Type: S3
-        Location: !Ref lambdaDeployment
+#     ServiceRole: !GetAtt BuildRole.Arn
 
-      Stages:
+#     Artifacts:
+#       Type: CODEPIPELINE
 
-        - Name: Source
-          Actions:
-            - Name: GitHubSource
-              ActionTypeId:
-                Category: Source
-                Owner: AWS
-                Provider: CodeStarSourceConnection
-                Version: "1"
+#     Environment:
+#       Type: LINUX_CONTAINER
+#       ComputeType: BUILD_GENERAL1_SMALL
+#       Image: aws/codebuild/standard:7.0
+#       EnvironmentVariables:
+#           - Name: DEPLOYMENT_BUCKET
+#             Value: !Ref lambdaDeployment
+#           - Name: LAMBDA_NAME
+#               Value: !Ref lambdaTransformation
 
-              OutputArtifacts:
-                - Name: SourceOutput
+#     Source:
+#       Type: CODEPIPELINE
 
-              Configuration:
-                ConnectionArn: !Ref GitHubConnection
-                FullRepositoryId: l3onh4rd/project-data-engineering
-                BranchName: main
+# LambdaPipeline:
+#   Type: AWS::CodePipeline::Pipeline
+#   Properties:
+#     RoleArn: !GetAtt PipelineRole.Arn
 
-        - Name: Build
-          Actions:
-            - Name: BuildLambda
-              ActionTypeId:
-                Category: Build
-                Owner: AWS
-                Provider: CodeBuild
-                Version: "1"
+#     ArtifactStore:
+#       Type: S3
+#       Location: !Ref lambdaDeployment
 
-              InputArtifacts:
-                - Name: SourceOutput
+#     Stages:
 
-              OutputArtifacts:
-                - Name: BuildOutput
+#       - Name: Source
+#         Actions:
+#           - Name: GitHubSource
+#             ActionTypeId:
+#               Category: Source
+#               Owner: AWS
+#               Provider: CodeStarSourceConnection
+#               Version: "1"
 
-              Configuration:
-                ProjectName: !Ref LambdaBuildProject
+#             OutputArtifacts:
+#               - Name: SourceOutput
 
-Outputs:
+#             Configuration:
+#               ConnectionArn: !Ref GitHubConnection
+#               FullRepositoryId: l3onh4rd/project-data-engineering
+#               BranchName: main
 
-  InputBucket:
-    Description: Input bucket for CSV files
-    Value: !Ref input
+#       - Name: Build
+#         Actions:
+#           - Name: BuildLambda
+#             ActionTypeId:
+#               Category: Build
+#               Owner: AWS
+#               Provider: CodeBuild
+#               Version: "1"
 
-  OutputBucket:
-    Description: Output bucket for Parquet files
-    Value: !Ref output
+#             InputArtifacts:
+#               - Name: SourceOutput
 
-  DeploymentBucket:
-    Description: Bucket containing the Lambda deployment package
-    Value: !Ref lambdaDeployment
+#             OutputArtifacts:
+#               - Name: BuildOutput
 
-  LambdaFunction:
-    Description: Lambda function name
-    Value: !Ref lambdaTransformation
+#             Configuration:
+#               ProjectName: !Ref LambdaBuildProject
+
+#
+# AWS Glue Teil
+#
+#
+# Step 5
+#
+
+GlueDatabase:
+  Type: AWS::Glue::Database
+  Properties:
+    CatalogId: !Ref AWS::AccountId
+    DatabaseInput:
+      Name: parquet_db
+
+GlueTable:
+  Type: AWS::Glue::Table
+  Properties:
+    DatabaseName: !Ref GlueDatabase
+    CatalogId: !Ref AWS::AccountId
+
+    TableInput:
+      Name: parquet_table
+      TableType: EXTERNAL_TABLE
+
+      StorageDescriptor:
+        Columns:
+          - Name: id
+            Type: int
+          - Name: receipt_id
+            Type: int
+          - Name: street
+            Type: string
+          - Name: zipcode
+            Type: int
+          - Name: date
+            Type: string
+          - Name: time
+            Type: string
+          - Name: product_name
+            Type: string
+          - Name: unit_price
+            Type: float
+          - Name: quantity
+            Type: int
+          - Name: total_price
+            Type: float
+
+        Location: !Sub "s3://${output}/"
+
+        InputFormat: org.apache.hadoop.hive.ql.io.parquet.MapredParquetInputFormat
+        OutputFormat: org.apache.hadoop.hive.ql.io.parquet.MapredParquetOutputFormat
+
+        SerdeInfo:
+          SerializationLibrary: org.apache.hadoop.hive.ql.io.parquet.serde.ParquetHiveSerDe
+
+AthenaWorkGroup:
+  Type: AWS::Athena::WorkGroup
+  Properties:
+    Name: parquet-workgroup
+    WorkGroupConfiguration:
+      ResultConfiguration:
+        OutputLocation: !Sub "s3://${output}/athena-results/"
+
+# Outputs:
+
+#   InputBucket:
+#     Description: Input bucket for CSV files
+#     Value: !Ref input
+
+#   OutputBucket:
+#     Description: Output bucket for Parquet files
+#     Value: !Ref output
+
+#   DeploymentBucket:
+#     Description: Bucket containing the Lambda deployment package
+#     Value: !Ref lambdaDeployment
+
+#   LambdaFunction:
+#     Description: Lambda function name
+#     Value: !Ref lambdaTransformation
