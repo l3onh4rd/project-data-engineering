@@ -63,7 +63,14 @@ def lambda_handler(event, context):
         if not output_bucket:
             raise Exception("OUTPUT_BUCKET environment variable not set")
 
-        output_key = key.replace(".csv", ".parquet")
+        # Original-Dateiname ohne Pfad übernehmen
+        filename = os.path.basename(key)
+
+        # Dateiendung ersetzen
+        parquet_filename = os.path.splitext(filename)[0] + ".parquet"
+
+        # Ausgabe immer im Unterordner "parquet/"
+        output_key = f"parquet/{parquet_filename}"
 
         print(f"OUTPUT BUCKET: {output_bucket}")
         print(f"OUTPUT KEY: {output_key}")
