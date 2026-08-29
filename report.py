@@ -2,9 +2,7 @@ import pandas as pd
 import boto3
 import os
 import urllib.parse
-import matplotlib
-matplotlib.use("Agg")
-import matplotlib.pyplot as plt
+# import plotly.express as px
 from datetime import datetime
 
 s3 = boto3.client("s3")
@@ -33,7 +31,7 @@ def lambda_handler(event, context):
         s3.download_file(bucket, key, download_path)
 
         # # Step 4 - Read Parquet
-        print("Reading CSV...")
+        print("Reading Parquet...")
         df = pd.read_parquet(download_path)
         # Printing Debugging Information
         print("DF SHAPE:", df.shape)
@@ -57,55 +55,50 @@ def lambda_handler(event, context):
         print("Products per day:")
         print(products_per_day)
 
-        # Step 6 - Create chart
-        plt.figure(figsize=(12, 6))
+        # # Step 6 - Create Plotly chart
+        # fig = px.bar(
+        #     products_per_day,
+        #     x="date",
+        #     y="products",
+        #     title="Anzahl gekaufter Produkte pro Tag",
+        #     labels={
+        #         "date": "Datum",
+        #         "products": "Gekaufte Produkte"
+        #     }
+        # )
 
-        plt.bar(
-            products_per_day["date"].astype(str),
-            products_per_day["products"]
-        )
 
-        plt.xlabel("Datum")
-        plt.ylabel("Gekaufte Produkte")
-        plt.title("Anzahl gekaufter Produkte pro Tag")
+        # # Step 7 - Create timestamped filename
+        # timestamp = datetime.now().strftime(
+        #     "%Y-%m-%d_%H-%M-%S"
+        # )
 
-        plt.xticks(
-            rotation=45,
-            ha="right"
-        )
+        # chart_filename = f"products-per-day_{timestamp}.png"
 
-        plt.tight_layout()
+        # chart_path = f"/tmp/{chart_filename}"
 
-        # Step 7 - Create timestamped filename
-        timestamp = datetime.now().strftime(
-            "%Y-%m-%d_%H-%M-%S"
-        )
+        # # Step 8 - Save HTML
+        # fig.write_html(
+        #     chart_path,
+        #     include_plotlyjs=True
+        # )
 
-        chart_filename = f"products-per-day_{timestamp}.png"
+        # # Step 9 - Upload to S3
+        # report_key = f"charts/{chart_filename}"
 
-        chart_path = f"/tmp/{chart_filename}"
+        # s3.upload_file(
+        #     chart_path,
+        #     report_bucket,
+        #     report_key,
+        #     ExtraArgs={
+        #         "ContentType": "text/html"
+        #     }
+        # )
 
-        # Step 8 - Save chart
-        plt.savefig(
-            chart_path,
-            dpi=150
-        )
-
-        plt.close()
-
-        # Step 9 - Upload chart to Report Bucket
-        report_key = f"charts/{chart_filename}"
-
-        s3.upload_file(
-            chart_path,
-            report_bucket,
-            report_key
-        )
-
-        print(
-            f"Chart successfully uploaded to "
-            f"s3://{report_bucket}/{report_key}"
-        )
+        # print(
+        #     f"Chart successfully uploaded to "
+        #     f"s3://{report_bucket}/{report_key}"
+        # )
 
         print("### Lambda finished successfully ###")
 
