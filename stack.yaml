@@ -40,18 +40,6 @@ Resources:
       PublicAccessBlockConfiguration:
         IgnorePublicAcls: true
         RestrictPublicBuckets: true
-      #
-      # STEP 3
-      #
-      # NotificationConfiguration:
-      #   LambdaConfigurations:
-      #     - Event: s3:ObjectCreated:*
-      #       Function: !GetAtt lambdaReport.Arn
-      #       Filter:
-      #         Key:
-      #           FilterRules:
-      #             - Name: prefix
-      #               Value: parquet/
   lambdaReportDeploymentBucketPolicy:
     Type: AWS::S3::BucketPolicy
     Properties:
@@ -117,6 +105,18 @@ Resources:
       PublicAccessBlockConfiguration:
         IgnorePublicAcls: true
         RestrictPublicBuckets: true
+      #
+      # STEP 3
+      #
+      # NotificationConfiguration:
+      #   LambdaConfigurations:
+      #     - Event: s3:ObjectCreated:*
+      #       Function: !GetAtt lambdaReport.Arn
+      #       Filter:
+      #         S3Key:
+      #           Rules:
+      #             - Name: prefix
+      #               Value: parquet/
   outputBucketPolicy:
     Type: AWS::S3::BucketPolicy
     Properties:
@@ -131,6 +131,35 @@ Resources:
             Resource:
               - !GetAtt output.Arn
               - !Sub ${output.Arn}/*
+            Condition:
+              Bool:
+                aws:SecureTransport: 'false'
+  report:
+    Type: AWS::S3::Bucket
+    Properties:
+      BucketName: !Sub ${AWS::StackName}-report
+      BucketEncryption:
+        ServerSideEncryptionConfiguration:
+          - ServerSideEncryptionByDefault:
+              SSEAlgorithm: aws:kms
+              KMSMasterKeyID: alias/aws/s3
+      PublicAccessBlockConfiguration:
+        IgnorePublicAcls: true
+        RestrictPublicBuckets: true
+  reportBucketPolicy:
+    Type: AWS::S3::BucketPolicy
+    Properties:
+      Bucket: !Ref report
+      PolicyDocument:
+        Id: RequireEncryptionInTransit
+        Version: '2012-10-17'
+        Statement:
+          - Principal: '*'
+            Action: '*'
+            Effect: Deny
+            Resource:
+              - !GetAtt report.Arn
+              - !Sub ${report.Arn}/*
             Condition:
               Bool:
                 aws:SecureTransport: 'false'
@@ -210,7 +239,7 @@ Resources:
   #       - arn:aws:lambda:eu-central-1:336392948345:layer:AWSSDKPandas-Python311:31
   #     Environment:
   #       Variables:
-  #         OUTPUT_BUCKET: !Ref output
+  #         OUTPUT_BUCKET: !Ref report
   # LambdaInvokePermissionReport:
   #   Type: AWS::Lambda::Permission
   #   Properties:
@@ -475,7 +504,15 @@ Resources:
 #   DeploymentBucket:
 #     Description: Bucket containing the Lambda deployment package
 #     Value: !Ref lambdaDeployment
+  
+#   DeploymentReportBucket:
+#     Description: Bucket containing the Lambda deployment package
+#     Value: !Ref lambdaReportDeployment
 
 #   LambdaFunction:
 #     Description: Lambda function name
 #     Value: !Ref lambdaTransformation
+  
+#   LambdaReportFunction:
+#     Description: Lambda function name
+#     Value: !Ref lambdaReport
