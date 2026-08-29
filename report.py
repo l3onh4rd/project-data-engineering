@@ -2,6 +2,8 @@ import pandas as pd
 import boto3
 import os
 import urllib.parse
+import matplotlib
+matplotlib.use("Agg")
 import matplotlib.pyplot as plt
 from datetime import datetime
 

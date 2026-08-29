@@ -9,7 +9,13 @@ phases:
     commands:
       - echo "Building Lambda package..."
       - zip function.zip main.py
-      - zip report.zip report.py
+      # install matplotlip
+      - mkdir package
+      - pip install matplotlib -t package/
+      - cp report.py package/
+      - cd package
+      - zip -r ../report.zip .
+      - cd ..
 
       - echo "Uploading package..."
       - aws s3 cp function.zip s3://$DEPLOYMENT_BUCKET/function.zip
