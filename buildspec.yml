@@ -9,16 +9,20 @@ phases:
     commands:
       - echo "Building Lambda package..."
       - zip function.zip main.py
+      - zip report.zip report.py
 
       - echo "Uploading package..."
       - aws s3 cp function.zip s3://$DEPLOYMENT_BUCKET/function.zip
+      - aws s3 cp report.zip s3://$DEPLOYMENT_REPORT_BUCKET/report.zip
 
       - echo "Updating Lambda..."
       - echo $LAMBDA_NAME
       - echo $DEPLOYMENT_BUCKET
       - aws --version
       - aws lambda update-function-code --function-name $LAMBDA_NAME --s3-bucket $DEPLOYMENT_BUCKET --s3-key function.zip
+      - aws lambda update-function-code --function-name $LAMBDA_REPORT_NAME --s3-bucket $DEPLOYMENT_REPORT_BUCKET --s3-key report.zip
 
 artifacts:
   files:
     - function.zip
+    - report.zip

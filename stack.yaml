@@ -28,6 +28,47 @@ Resources:
             Condition:
               Bool:
                 aws:SecureTransport: 'false'
+  lambdaReportDeployment:
+    Type: AWS::S3::Bucket
+    Properties:
+      BucketName: !Sub ${AWS::StackName}-lambda-report-deployment
+      BucketEncryption:
+        ServerSideEncryptionConfiguration:
+          - ServerSideEncryptionByDefault:
+              SSEAlgorithm: aws:kms
+              KMSMasterKeyID: alias/aws/s3
+      PublicAccessBlockConfiguration:
+        IgnorePublicAcls: true
+        RestrictPublicBuckets: true
+      #
+      # STEP 3
+      #
+      # NotificationConfiguration:
+      #   LambdaConfigurations:
+      #     - Event: s3:ObjectCreated:*
+      #       Function: !GetAtt lambdaReport.Arn
+      #       Filter:
+      #         Key:
+      #           FilterRules:
+      #             - Name: prefix
+      #               Value: parquet/
+  lambdaReportDeploymentBucketPolicy:
+    Type: AWS::S3::BucketPolicy
+    Properties:
+      Bucket: !Ref lambdaReportDeployment
+      PolicyDocument:
+        Id: RequireEncryptionInTransit
+        Version: '2012-10-17'
+        Statement:
+          - Principal: '*'
+            Action: '*'
+            Effect: Deny
+            Resource:
+              - !GetAtt lambdaReportDeployment.Arn
+              - !Sub ${lambdaReportDeployment.Arn}/*
+            Condition:
+              Bool:
+                aws:SecureTransport: 'false'
   input:
     Type: AWS::S3::Bucket
     Properties:
@@ -153,6 +194,30 @@ Resources:
   #     FunctionName: !Ref lambdaTransformation
   #     Principal: s3.amazonaws.com
   #     SourceArn: !GetAtt input.Arn
+  # lambdaReport:
+  #   Type: AWS::Lambda::Function
+  #   Properties:
+  #     FunctionName: !Sub ${AWS::StackName}-parquet-to-report
+  #     Runtime: python3.11
+  #     Handler: report.lambda_handler
+  #     Role: !GetAtt lambdaExecutionRole.Arn
+  #     Code:
+  #       S3Bucket: !Ref lambdaReportDeployment
+  #       S3Key: report.zip
+  #     MemorySize: 1024
+  #     Timeout: 120
+  #     Layers:
+  #       - arn:aws:lambda:eu-central-1:336392948345:layer:AWSSDKPandas-Python311:31
+  #     Environment:
+  #       Variables:
+  #         OUTPUT_BUCKET: !Ref output
+  # LambdaInvokePermissionReport:
+  #   Type: AWS::Lambda::Permission
+  #   Properties:
+  #     Action: lambda:InvokeFunction
+  #     FunctionName: !Ref lambdaReport
+  #     Principal: s3.amazonaws.com
+  #     SourceArn: !GetAtt output.Arn
   #
   # Repository Connection for CI/CD
   #
@@ -276,6 +341,10 @@ Resources:
   #           Value: !Ref lambdaDeployment
   #         - Name: LAMBDA_NAME
   #           Value: !Ref lambdaTransformation
+  #         - Name: DEPLOYMENT_REPORT_BUCKET
+  #           Value: !Ref lambdaReportDeployment
+  #         - Name: LAMBDA_REPORT_NAME
+  #           Value: !Ref lambdaReport
 
   #     Source:
   #       Type: CODEPIPELINE

@@ -7,87 +7,54 @@ s3 = boto3.client("s3")
 
 
 def lambda_handler(event, context):
-    print('42 Hello World 42')
-    print("### Lambda started through upload of csv file ###")
+    # print('42 Hello World 42')
 
     try:
-        # ---------------------------
-        # 1. Event Parsing (robust)
-        # ---------------------------
+        # Step 1 - Parse Event
         record = event["Records"][0]
 
         bucket = record["s3"]["bucket"]["name"]
         key = urllib.parse.unquote_plus(record["s3"]["object"]["key"])
 
-        print(f"INPUT BUCKET: {bucket}")
-        print(f"INPUT KEY: {key}")
-
-        # ---------------------------
-        # 2. Paths
-        # ---------------------------
+        # Step 2 - Parse paths
         filename = key.split("/")[-1]
 
         download_path = f"/tmp/{filename}"
         output_path = "/tmp/output.parquet"
 
-        print(f"DOWNLOAD PATH: {download_path}")
-        print(f"OUTPUT PATH: {output_path}")
-
-        # ---------------------------
-        # 3. Download CSV
-        # ---------------------------
-        print("Downloading file from S3...")
+        # Step 3 - Download File
         s3.download_file(bucket, key, download_path)
-        print("Download complete")
 
-        # ---------------------------
-        # 4. CSV → DataFrame
-        # ---------------------------
+        # Step 4 - Read CSV
         print("Reading CSV...")
         df = pd.read_csv(download_path)
-
+        # Printing Debugging Information
         print("DF SHAPE:", df.shape)
         print("DF COLUMNS:", df.columns.tolist())
 
-        # ---------------------------
-        # 5. Write Parquet
-        # ---------------------------
-        print("Writing Parquet...")
+        # Step 5 - Convert to parquet
         df.to_parquet(output_path, index=False, engine="pyarrow")
-        print("Parquet written successfully")
 
-        # ---------------------------
-        # 6. Output S3 config
-        # ---------------------------
+        # Step 6 - Write parquet file to output bucket
         output_bucket = os.environ.get("OUTPUT_BUCKET")
 
         if not output_bucket:
             raise Exception("OUTPUT_BUCKET environment variable not set")
 
-        # Original-Dateiname ohne Pfad übernehmen
+        # use original filename without path
         filename = os.path.basename(key)
-
-        # Dateiendung ersetzen
+        # set file type
         parquet_filename = os.path.splitext(filename)[0] + ".parquet"
-
-        # Ausgabe immer im Unterordner "parquet/"
+        # save in subfolder
         output_key = f"parquet/{parquet_filename}"
 
-        print(f"OUTPUT BUCKET: {output_bucket}")
-        print(f"OUTPUT KEY: {output_key}")
-
-        # ---------------------------
-        # 7. Upload
-        # ---------------------------
-        print("Uploading to S3...")
-
+        # Step 7 - Upload
         s3.upload_file(
             output_path,
             output_bucket,
             output_key
         )
 
-        print("Upload complete")
         print("### Lambda finished successfully ###")
 
         return {
