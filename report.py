@@ -2,6 +2,8 @@ import pandas as pd
 import boto3
 import os
 import urllib.parse
+import matplotlib.pyplot as plt
+from datetime import datetime
 
 s3 = boto3.client("s3")
 
@@ -20,6 +22,9 @@ def lambda_handler(event, context):
         filename = key.split("/")[-1]
 
         download_path = f"/tmp/{filename}"
+
+        # Report Bucket
+        report_bucket = os.environ["REPORT_BUCKET"]
         # output_path = "/tmp/output.parquet"
 
         # # Step 3 - Download File
@@ -33,12 +38,72 @@ def lambda_handler(event, context):
         print("DF COLUMNS:", df.columns.tolist())
         print("DF COLUMNS:", df.size)
 
-        # Step 7 - Upload
-        # s3.upload_file(
-        #     output_path,
-        #     output_bucket,
-        #     output_key
-        # )
+        # Step 5 - Prepare data
+        df["date"] = pd.to_datetime(df["date"])
+
+        products_per_day = (
+            df.groupby(df["date"].dt.date)["quantity"]
+            .sum()
+            .reset_index()
+        )
+
+        products_per_day.columns = [
+            "date",
+            "products"
+        ]
+
+        print("Products per day:")
+        print(products_per_day)
+
+        # Step 6 - Create chart
+        plt.figure(figsize=(12, 6))
+
+        plt.bar(
+            products_per_day["date"].astype(str),
+            products_per_day["products"]
+        )
+
+        plt.xlabel("Datum")
+        plt.ylabel("Gekaufte Produkte")
+        plt.title("Anzahl gekaufter Produkte pro Tag")
+
+        plt.xticks(
+            rotation=45,
+            ha="right"
+        )
+
+        plt.tight_layout()
+
+        # Step 7 - Create timestamped filename
+        timestamp = datetime.now().strftime(
+            "%Y-%m-%d_%H-%M-%S"
+        )
+
+        chart_filename = f"products-per-day_{timestamp}.png"
+
+        chart_path = f"/tmp/{chart_filename}"
+
+        # Step 8 - Save chart
+        plt.savefig(
+            chart_path,
+            dpi=150
+        )
+
+        plt.close()
+
+        # Step 9 - Upload chart to Report Bucket
+        report_key = f"charts/{chart_filename}"
+
+        s3.upload_file(
+            chart_path,
+            report_bucket,
+            report_key
+        )
+
+        print(
+            f"Chart successfully uploaded to "
+            f"s3://{report_bucket}/{report_key}"
+        )
 
         print("### Lambda finished successfully ###")
 
