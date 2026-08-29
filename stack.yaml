@@ -322,6 +322,12 @@ Resources:
   #                 - lambda:GetFunction
   #               Resource: !GetAtt lambdaTransformation.Arn
 
+  #             - Effect: Allow
+  #               Action:
+  #                 - lambda:UpdateFunctionCode
+  #                 - lambda:GetFunction
+  #               Resource: !GetAtt lambdaReport.Arn
+
   # LambdaBuildProject:
   #   Type: AWS::CodeBuild::Project
   #   Properties:
