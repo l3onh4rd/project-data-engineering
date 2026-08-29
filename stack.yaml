@@ -239,7 +239,7 @@ Resources:
   #       - arn:aws:lambda:eu-central-1:336392948345:layer:AWSSDKPandas-Python311:31
   #     Environment:
   #       Variables:
-  #         OUTPUT_BUCKET: !Ref report
+  #         REPORT_BUCKET: !Ref report
   # LambdaInvokePermissionReport:
   #   Type: AWS::Lambda::Permission
   #   Properties:

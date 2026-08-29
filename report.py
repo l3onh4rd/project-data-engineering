@@ -36,10 +36,10 @@ def lambda_handler(event, context):
         # Printing Debugging Information
         print("DF SHAPE:", df.shape)
         print("DF COLUMNS:", df.columns.tolist())
-        print("DF COLUMNS:", df.size)
+        print("DF SIZE:", df.size)
 
         # Step 5 - Prepare data
-        df["date"] = pd.to_datetime(df["date"])
+        df["date"] = pd.to_datetime(df["date"], format="%d.%m.%Y")
 
         products_per_day = (
             df.groupby(df["date"].dt.date)["quantity"]
