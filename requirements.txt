@@ -1,1 +1,1 @@
-plotly==6.x.x
+plotly==7.0.0
