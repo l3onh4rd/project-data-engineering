@@ -7,7 +7,7 @@ s3 = boto3.client("s3")
 
 
 def lambda_handler(event, context):
-    print('42 Hello World 42')
+    print('Starting Lambda')
 
     try:
         # Step 1 - Parse Event

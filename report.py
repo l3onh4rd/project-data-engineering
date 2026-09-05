@@ -9,7 +9,7 @@ s3 = boto3.client("s3")
 
 
 def lambda_handler(event, context):
-    # print('42 Hello Report 42')
+    print('42 Hello Report 42')
 
     try:
         # Step 1 - Parse Event
