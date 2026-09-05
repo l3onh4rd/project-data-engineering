@@ -2,7 +2,7 @@ import pandas as pd
 import boto3
 import os
 import urllib.parse
-# import plotly.express as px
+import plotly.express as px
 from datetime import datetime
 
 s3 = boto3.client("s3")
@@ -56,49 +56,54 @@ def lambda_handler(event, context):
         print(products_per_day)
 
         # # Step 6 - Create Plotly chart
-        # fig = px.bar(
-        #     products_per_day,
-        #     x="date",
-        #     y="products",
-        #     title="Anzahl gekaufter Produkte pro Tag",
-        #     labels={
-        #         "date": "Datum",
-        #         "products": "Gekaufte Produkte"
-        #     }
-        # )
+
+        fig = px.line(
+            products_per_day,
+            x="date",
+            y="products",
+            title="Anzahl gekaufter Produkte pro Tag",
+            labels={
+                "date": "Datum",
+                "products": "Anzahl Produkte"
+            }
+        )
+
+        fig.update_layout(
+            template="plotly_white"
+        )
 
 
         # # Step 7 - Create timestamped filename
-        # timestamp = datetime.now().strftime(
-        #     "%Y-%m-%d_%H-%M-%S"
-        # )
+        timestamp = datetime.now().strftime(
+            "%Y-%m-%d_%H-%M-%S"
+        )
 
-        # chart_filename = f"products-per-day_{timestamp}.png"
+        chart_filename = f"products-per-day_{timestamp}.html"
 
-        # chart_path = f"/tmp/{chart_filename}"
+        chart_path = f"/tmp/{chart_filename}"
 
         # # Step 8 - Save HTML
-        # fig.write_html(
-        #     chart_path,
-        #     include_plotlyjs=True
-        # )
+        fig.write_html(
+            chart_path,
+            include_plotlyjs=True
+        )
 
         # # Step 9 - Upload to S3
-        # report_key = f"charts/{chart_filename}"
+        report_key = f"charts/{chart_filename}"
 
-        # s3.upload_file(
-        #     chart_path,
-        #     report_bucket,
-        #     report_key,
-        #     ExtraArgs={
-        #         "ContentType": "text/html"
-        #     }
-        # )
+        s3.upload_file(
+            chart_path,
+            report_bucket,
+            report_key,
+            ExtraArgs={
+                "ContentType": "text/html"
+            }
+        )
 
-        # print(
-        #     f"Chart successfully uploaded to "
-        #     f"s3://{report_bucket}/{report_key}"
-        # )
+        print(
+            f"Chart successfully uploaded to "
+            f"s3://{report_bucket}/{report_key}"
+        )
 
         print("### Lambda finished successfully ###")
 

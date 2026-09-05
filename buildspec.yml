@@ -9,7 +9,16 @@ phases:
     commands:
       - echo "Building Lambda package..."
       - zip function.zip main.py
-      - zip report.zip report.py
+      
+      
+      - echo "Installing Python dependencies..."
+      - pip install -r requirements.txt -t package/
+      - echo "Copying Lambda Report function..."
+      - cp report.py package/
+      - echo "Creating deployment package..."
+      - cd package
+      - zip -r ../report.zip .
+      - cd ..
 
       - echo "Uploading package..."
       - aws s3 cp function.zip s3://$DEPLOYMENT_BUCKET/function.zip
