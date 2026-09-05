@@ -3,6 +3,7 @@ import boto3
 import os
 import urllib.parse
 import plotly.express as px
+import matplotlib.pyplot as plt
 from datetime import datetime
 
 s3 = boto3.client("s3")
@@ -55,7 +56,7 @@ def lambda_handler(event, context):
         print("Products per day:")
         print(products_per_day)
 
-        # # Step 6 - Create Plotly chart
+        # Step 6 - Create Plotly chart
 
         fig = px.line(
             products_per_day,
@@ -72,6 +73,21 @@ def lambda_handler(event, context):
             template="plotly_white"
         )
 
+        # Step 6.5 - Matplotlib chart
+
+        plt.figure(figsize=(12, 6))
+
+        plt.bar(
+            products_per_day["date"],
+            products_per_day["products"]
+        )
+
+        plt.xlabel("Datum")
+        plt.ylabel("Anzahl gekaufter Produkte")
+        plt.title("Gekaufte Produkte pro Tag")
+
+        plt.xticks(rotation=45)
+        plt.tight_layout()
 
         # # Step 7 - Create timestamped filename
         timestamp = datetime.now().strftime(
@@ -79,8 +95,18 @@ def lambda_handler(event, context):
         )
 
         chart_filename = f"products-per-day_{timestamp}.html"
-
         chart_path = f"/tmp/{chart_filename}"
+
+        matplotlib_chart_filename = f"products-per-day_{timestamp}.png"
+        matplotlib_chart_path = f"/tmp/{matplotlib_chart_filename}"
+
+        plt.savefig(
+            matplotlib_chart_path,
+            format="png",
+            dpi=400
+        )
+
+        plt.close()
 
         # # Step 8 - Save HTML
         fig.write_html(
@@ -90,6 +116,7 @@ def lambda_handler(event, context):
 
         # # Step 9 - Upload to S3
         report_key = f"charts/{chart_filename}"
+        matplotlib_report_key = f"charts/{matplotlib_chart_filename}"
 
         s3.upload_file(
             chart_path,
@@ -97,6 +124,15 @@ def lambda_handler(event, context):
             report_key,
             ExtraArgs={
                 "ContentType": "text/html"
+            }
+        )
+
+        s3.upload_file(
+            matplotlib_chart_path,
+            report_bucket,
+            matplotlib_report_key,
+            ExtraArgs={
+                "ContentType": "image/png"
             }
         )
 
