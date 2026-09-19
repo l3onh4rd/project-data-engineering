@@ -248,10 +248,13 @@ Resources:
   #     Principal: s3.amazonaws.com
   #     SourceArn: !GetAtt output.Arn
   #
+  # END STEP 2
+  #
+  #
   # Repository Connection for CI/CD
   #
   #
-  # Step 4 -> Authorize Connection
+  # STEP 4 -> Authorize Connection
   #
   # GitHubConnection:
   #   Type: AWS::CodeStarConnections::Connection
@@ -430,10 +433,13 @@ Resources:
   #             Configuration:
   #               ProjectName: !Ref LambdaBuildProject
   #
+  # END STEP 4
+  #
+  #
   # AWS Glue Teil
   #
   #
-  # Step 5
+  # STEP 5
   #
   # GlueDatabase:
   #   Type: AWS::Glue::Database

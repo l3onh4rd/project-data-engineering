@@ -57,6 +57,32 @@ The infrastructure can be deployed using AWS CloudFormation. After deployment, u
 
 The resulting Parquet data is stored in the output bucket and can be queried using Athena. The reporting Lambda subsequently generates the interactive HTML report.
 
+### Step-by-step guide to deploy the infrastructure
+
+- Step 0
+    - Go to your aws console and create a CloudFormation stack.
+- Step 1
+    - Copy the stack.yaml file to your CloudFormation template editor.
+    - Deploy the stack with no changes to the script. Leave all commented out sections as they are.
+    - Deploy the stack.
+- Step 2
+    - After the successful deployment of step 1 you need to:
+    - Upload the function.zip to the created lambda-code-deployment S3 bucket.
+    - Upload the report.zip file to the created lambda-report-deployment S3 bucket.
+    - Remove the commented section of the stack.yaml for step 2 (until the comment 'END STEP 2')
+    - Deploy the stack.
+- Step 3
+    - Remove the commented section marked with STEP 3. Activate the NotificationConfiguration for the S3 Buckets input and output.
+    - Deploy the stack.
+- Step 4
+    - Remove the commented section marked with STEP 4 (until the comment 'END STEP 4').
+    - Deploy the stack. It deploys the build pipeline.
+    - After successful deployment you need to authorize the github connection once via the aws console in the CodePipeline service under 'connections'.
+- Step 5
+    - Deploy the rest of the stack.yaml file and the last steps for the aws athena and aws glue servics will be deployed.
+
+Now the complete infrastructure is deployed and ready to use.
+
 ## Technologies
 - Python
 - Pandas
