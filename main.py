@@ -121,7 +121,7 @@ def lambda_handler(event, context):
             df["time"],
             format="%H:%M:%S",
             errors="coerce"
-        ).dt.time
+        ).dt.strftime("%H:%M:%S")
 
         # Step 7 - Validity Checks
         # Missing Values

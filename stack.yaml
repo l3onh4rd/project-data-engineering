@@ -469,7 +469,7 @@ Resources:
   #           - Name: zipcode
   #             Type: int
   #           - Name: date
-  #             Type: string
+  #             Type: timestamp
   #           - Name: time
   #             Type: string
   #           - Name: product_name
