@@ -115,7 +115,7 @@ def lambda_handler(event, context):
             df["date"],
             format="%d.%m.%Y",
             errors="coerce"
-        )
+        ).dt.strftime("%d-%m-%Y")
 
         df["time"] = pd.to_datetime(
             df["time"],
