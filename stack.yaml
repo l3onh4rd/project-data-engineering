@@ -467,7 +467,7 @@ Resources:
   #           - Name: street
   #             Type: string
   #           - Name: zipcode
-  #             Type: int
+  #             Type: string
   #           - Name: date
   #             Type: string
   #           - Name: time
