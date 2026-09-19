@@ -76,10 +76,12 @@ def lambda_handler(event, context):
         )
 
         # ZIP column
-        df["zipcode"] = (pd.to_numeric(
-            df["zipcode"],
-            errors="coerce")
-            .astype("Int64"))
+        df["zipcode"] = (
+            df["zipcode"]
+            .astype("string")
+            .str.strip()
+            .str.zfill(5)
+        )
 
         # numeric columns
 
